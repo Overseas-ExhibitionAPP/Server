@@ -14,31 +14,35 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import MongoConnection.MongoJDBC;
-@Path("/V1/Questionnaire")
-public class QuestionnaireFunc {
+@Path("/V1/exhibitions/{year}/traffic")
+public class TrafficInfoFunc {
     MongoJDBC m;
-    public QuestionnaireFunc() throws Exception{
+    public TrafficInfoFunc() throws Exception{
         m = new MongoJDBC();
     }
-    //取得該舉辦地區專屬的行動問卷
+    //取得該舉辦地區之交通資訊與相關資訊
     @GET
-    @Path("/{year}/{country}")
+    @Path("/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getQuestionnaire(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
-        //尚未過濾未到系統開放時間不開放填答
+    public Response getTrafficInfo(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
         try{
-            DBCollection col = m.db.getCollection("Questionnaire");
+            DBCollection col = m.db.getCollection("Exhibition");
             BasicDBObject search = new BasicDBObject();
             search.put("country", country);
             search.put("year", year);
             DBCursor searchR = col.find(search);
-            JSONObject output = new JSONObject(searchR.next().toString());
-            //移除不需要資訊
-            output.remove("_id");
-            output.remove("eid");
-            output.remove("openingtime");
-            output.remove("closingtime");
+            JSONArray tmpArr = (new JSONObject(searchR.next().toString())).getJSONArray("subExhib");
+            JSONArray outputArr = new JSONArray();
+            for(int i = 0; i < tmpArr.length(); i++) {
+                //去除不需要資訊
+                JSONObject tmp = tmpArr.getJSONObject(i);
+                tmp.remove("school");
+                tmp.remove("layout");
+                outputArr.put(tmp);
+            }
+            JSONObject output = new JSONObject();
             output.put("status", 200);
+            output.put("traffic_list", outputArr);
             NewResponse re = new NewResponse();
             re.setResponse(output.toString());
             return re.builder.build();
