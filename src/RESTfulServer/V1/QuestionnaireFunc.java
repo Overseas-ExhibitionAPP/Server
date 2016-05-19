@@ -8,45 +8,46 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import MongoConnection.MongoJDBC;
-@Path("/V1/exhibitions/{year}/layout")
-public class LayoutFunc {
+@Path("/V1/Questionnaire")
+public class QuestionnaireFunc {
     MongoJDBC m;
-    public LayoutFunc() throws Exception{
+    public QuestionnaireFunc() throws Exception{
         m = new MongoJDBC();
     }
-    //取得該舉辦地區之各展點攤位圖
+    //取得該國家之各展點攤位圖
     @GET
-    @Path("{country}")
+    @Path("/{year}/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getLayout(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
+    public Response getQuestionnaire(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
+        //尚未過濾未到系統開放時間不開放填答
         try{
-            DBCollection col = m.db.getCollection("Exhibition");
+            DBCollection col = m.db.getCollection("Questionnaire");
             BasicDBObject search = new BasicDBObject();
             search.put("country", country);
             search.put("year", year);
             DBCursor searchR = col.find(search);
-            JSONArray tmpArr = (new JSONObject(searchR.next().toString())).getJSONArray("subExhib");
-            JSONArray outputArr = new JSONArray();
-            for(int i = 0; i < tmpArr.length(); i++) {
-                //去除不需要資訊
-                JSONObject tmp = tmpArr.getJSONObject(i);
-                tmp.remove("position");
-                tmp.remove("school");
-                tmp.remove("address");
-                tmp.remove("starttime");
-                tmp.remove("endtime");
-                outputArr.put(tmp);
-            }
-            JSONObject output = new JSONObject();
+            JSONObject output = new JSONObject(searchR.next().toString());
+            //移除不需要資訊
+            output.remove("_id");
+            output.remove("eid");
+            output.remove("openingtime");
+            output.remove("closingtime");
             output.put("status", 200);
-            output.put("layout_list", outputArr);
             NewResponse re = new NewResponse();
             re.setResponse(output.toString());
+            return re.builder.build();
+        } catch(JSONException err) {
+            NewResponse re = new NewResponse();
+            JSONObject content = new JSONObject();
+            content.put("status", "400");
+            content.put("message","Request格式或資料錯誤");
+            re.setResponse(content.toString());
             return re.builder.build();
         } catch(NoSuchElementException err) {
             NewResponse re = new NewResponse();
