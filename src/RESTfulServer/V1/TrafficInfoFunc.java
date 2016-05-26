@@ -13,8 +13,10 @@ import org.json.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
+import com.mongodb.MongoSocketReadTimeoutException;
+
 import MongoConnection.MongoJDBC;
-@Path("/V1/exhibitions/{year}/traffic")
+@Path("/V1/exhibitions")
 public class TrafficInfoFunc {
     MongoJDBC m;
     public TrafficInfoFunc() throws Exception{
@@ -22,9 +24,11 @@ public class TrafficInfoFunc {
     }
     //取得該舉辦地區之交通資訊與相關資訊
     @GET
-    @Path("/{country}")
+    @Path("/{year}/traffic/{country}")
     @Produces("application/json; charset=UTF-8")
     public Response getTrafficInfo(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
         try{
             DBCollection col = m.db.getCollection("Exhibition");
             BasicDBObject search = new BasicDBObject();
@@ -40,35 +44,28 @@ public class TrafficInfoFunc {
                 tmp.remove("layout");
                 outputArr.put(tmp);
             }
-            JSONObject output = new JSONObject();
             output.put("status", 200);
             output.put("traffic_list", outputArr);
-            NewResponse re = new NewResponse();
-            re.setResponse(output.toString());
-            return re.builder.build();
         } catch(JSONException err) {
-            NewResponse re = new NewResponse();
-            JSONObject content = new JSONObject();
-            content.put("status", "400");
-            content.put("message","Request格式或資料錯誤");
-            re.setResponse(content.toString());
-            return re.builder.build();
+        	output = new JSONObject();
+        	output.put("status", "400");
+        	output.put("message","Request格式或資料錯誤");
         } catch(NoSuchElementException err) {
-            NewResponse re = new NewResponse();
-            JSONObject content = new JSONObject();
-            content.put("status", "400");
-            content.put("message","Request格式或資料錯誤");
-            re.setResponse(content.toString());
-            return re.builder.build();
+        	output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式或資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
         } catch(Exception err) {
-            NewResponse re = new NewResponse();
-            JSONObject content = new JSONObject();
-            content.put("status", "500");
-            content.put("message","伺服器錯誤");
-            re.setResponse(content.toString());
-            return re.builder.build();
+        	output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
         } finally {
+        	re.setResponse(output.toString());
             m.mClient.close();
         }
+        return re.builder.build();
     }
 }
