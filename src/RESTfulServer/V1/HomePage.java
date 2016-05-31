@@ -36,6 +36,8 @@ public class HomePage {
         //User相關API
         s += "<h2> 主題活動相關API:</h2>";
         s += "<li>" + "取得某user之集點簿(GET): /exhibitions/activity/{:userid}/{:country}/collectionbox" + "</li>";
+        s += "<li>" + "某user進行集章(PUT): /exhibitions/activity/collectionbox" + "</li>";
+        s += "<li>" + "某user進行兌換(GET): /exhibitions/activity/{:userid}/{:country}/collectionbox/exchange" + "</li>";
         //User相關API
         s += "</body></html>";
         return s;

@@ -5,20 +5,19 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.NoSuchElementException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
 import com.mongodb.MongoSocketReadTimeoutException;
 import MongoConnection.MongoJDBC;
 
@@ -74,11 +73,11 @@ public class ActivityFunc {
         }
         return re.builder.build();
     }
-    @POST
+    @PUT
     @Path("/collectionbox")
     @Consumes("application/json; charset=UTF-8")
     @Produces("application/json; charset=UTF-8")
-    public Response insertUserCBox(String input){
+    public Response updateUserCBox(String input){
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -118,9 +117,7 @@ public class ActivityFunc {
             } else {
                 //檢查是否處於已兌換狀態(boxS為1)，若為兌換狀態，則不新增任何集章紀錄
                 int boxS = Integer.parseInt(searchR.next().get("box-status").toString());
-                System.out.println(boxS);
                 if(boxS == 1) {
-                    System.out.println("test");
                     output.put("status", "403");
                     output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
                 } else {
@@ -131,6 +128,70 @@ public class ActivityFunc {
                     col.update(updateQuery,updateCommand);
                     output.put("status", "200");
                     output.put("message", "新增集章紀錄成功");
+                }
+            }
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式或資料錯誤");
+        }catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+        }
+        return re.builder.build();
+    }
+    @GET
+    @Path("/{userid}/{country}/collectionbox/exchange")
+    @Produces("application/json; charset=UTF-8")
+    public Response exchangeUserCBox(@PathParam("userid") String uid, @PathParam("country") String country){
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            //取得Server side目前時間之年分
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            //設定搜尋條件,找符合的集章簿
+            DBCollection col = m.db.getCollection("CollectionBox");
+            BasicDBObject search = new BasicDBObject();
+            search.put("uid", uid);
+            search.put("country", country);
+            search.put("year", year);
+            //檢查是否有符合的集章簿
+            DBCursor searchR = col.find(search);
+            int count = searchR.count();
+            if(count == 0) {
+                output.put("status", "403");
+                output.put("message", "尚未有集章紀錄，不得兌換");
+            } else {
+                JSONObject tmp = new JSONObject(searchR.next().toString());
+                //檢查是否處於已兌換狀態(boxS為1)/未兌換狀態(box為0)
+                int boxS = tmp.getInt("box-status");
+                if(boxS == 1) {
+                    output.put("status", "403-1");
+                    output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
+                } else {
+                    JSONArray tmpArr = tmp.getJSONArray("collectionbox");
+                    //檢查集章簿是否已集滿
+                    if(tmpArr.length() == 30) {
+                        BasicDBObject itemSet = new BasicDBObject();
+                        itemSet.put("box-status", 1);
+                        BasicDBObject updateCommand = new BasicDBObject();
+                        updateCommand.put("$set", itemSet);
+                        col.update(search,updateCommand);
+                        output.put("status", "200");
+                        output.put("message", "成功兌換");
+                    } else {
+                        output.put("status", "403-2");
+                        output.put("message", "尚未到達兌換條件");
+                    }
                 }
             }
         } catch(JSONException err) {
