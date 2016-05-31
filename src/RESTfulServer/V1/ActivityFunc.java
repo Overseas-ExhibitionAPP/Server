@@ -2,6 +2,7 @@ package RESTfulServer.V1;
 
 import javax.ws.rs.Path;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
@@ -17,6 +18,7 @@ import org.json.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoSocketReadTimeoutException;
 import MongoConnection.MongoJDBC;
 
@@ -28,7 +30,8 @@ public class ActivityFunc {
     }
     @GET
     @Path("/{userid}/{country}/collectionbox")
-    public Response getUser(@PathParam("userid") String uid, @PathParam("country") String country){
+    @Produces("application/json; charset=UTF-8")
+    public Response getUserCBox(@PathParam("userid") String uid, @PathParam("country") String country){
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -42,19 +45,21 @@ public class ActivityFunc {
             search.put("year", year);
             search.put("uid", uid);
             DBCursor searchR = col.find(search);
-            output = new JSONObject(searchR.next().toString());
-            output.remove("_id");
-            output.remove("country");
-            output.remove("year");
-            output.put("status", 200);
+            //檢查是否有符合條件之集章簿資料
+            if(searchR.count() == 0) {
+                output.put("status", "403");
+                output.put("message", "尚未有任何集章紀錄");
+            } else {
+                output = new JSONObject(searchR.next().toString());
+                output.remove("_id");
+                output.remove("country");
+                output.remove("year");
+                output.put("status", "200");
+            }
         } catch(JSONException err) {
-        	output = new JSONObject();
-        	output.put("status", "400");
-        	output.put("message","Request格式或資料錯誤");
-        } catch(NoSuchElementException err) {
             output = new JSONObject();
             output.put("status", "400");
-            output.put("message","Request格式或資料錯誤");
+            output.put("message","Request格式/資料錯誤");
         } catch(MongoSocketReadTimeoutException msrt) {
             output = new JSONObject();
             output.put("status", "502");
@@ -64,7 +69,84 @@ public class ActivityFunc {
             output.put("status", "500");
             output.put("message","伺服器錯誤");
         } finally {
-        	re.setResponse(output.toString());
+            re.setResponse(output.toString());
+            m.mClient.close();
+        }
+        return re.builder.build();
+    }
+    @POST
+    @Path("/collectionbox")
+    @Consumes("application/json; charset=UTF-8")
+    @Produces("application/json; charset=UTF-8")
+    public Response insertUserCBox(String input){
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            JSONObject jinput = new JSONObject(input);
+            //取得集章時間
+            SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            String vTime = sdFormat.format(new Date());
+            //取得符合學校代碼的logo(base64編碼)
+            DBCollection scol = m.db.getCollection("School-Logo");
+            BasicDBObject search = new BasicDBObject();
+            search.put("_id", jinput.getString("schoolnum"));
+            String schoolpic = scol.find(search).next().get("picture").toString();
+            DBCollection col = m.db.getCollection("CollectionBox");
+            //取得Server side目前時間之年分
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            //設定搜尋條件,找符合的集章簿
+            BasicDBObject updateQuery = new BasicDBObject();
+            updateQuery.put("uid", jinput.getString("userid"));
+            updateQuery.put("country", jinput.getString("country"));
+            updateQuery.put("year", year);
+            //設定欲新增之集章記錄，內含圖片之base64編碼與集章時戳
+            BasicDBObject item = new BasicDBObject();
+            item.put("picture", schoolpic);
+            item.put("timestamp", vTime);
+            //若資料庫中未有這筆資料，則新增之，若有則更新集章簿記錄
+            DBCursor searchR = col.find(updateQuery);
+            int count = searchR.count();
+            if(count == 0) {
+                ArrayList<BasicDBObject> cbox = new ArrayList<BasicDBObject>();
+                cbox.add(item);
+                updateQuery.put("collectionbox", cbox);
+                updateQuery.put("box-status", 0);
+                col.insert(updateQuery);
+                output.put("status", "201");
+                output.put("message", "新增集章簿與集章紀錄成功");
+            } else {
+                //檢查是否處於已兌換狀態(boxS為1)，若為兌換狀態，則不新增任何集章紀錄
+                int boxS = Integer.parseInt(searchR.next().get("box-status").toString());
+                System.out.println(boxS);
+                if(boxS == 1) {
+                    System.out.println("test");
+                    output.put("status", "403");
+                    output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
+                } else {
+                    BasicDBObject itemSet = new BasicDBObject();
+                    itemSet.put("collectionbox", item);
+                    BasicDBObject updateCommand = new BasicDBObject();
+                    updateCommand.put("$push", itemSet);
+                    col.update(updateQuery,updateCommand);
+                    output.put("status", "200");
+                    output.put("message", "新增集章紀錄成功");
+                }
+            }
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式或資料錯誤");
+        }catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
             m.mClient.close();
         }
         return re.builder.build();

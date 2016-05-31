@@ -68,6 +68,7 @@ public class QuestionnaireFunc {
     }
     @POST
     @Path("/{year}/{country}")
+    @Consumes("application/json; charset=UTF-8")
     @Produces("application/json; charset=UTF-8")
     public Response insertUserQuestionnaire(@PathParam("country") String country, 
     		@PathParam("year") int year, String input) throws Exception{
