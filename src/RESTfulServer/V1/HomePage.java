@@ -18,7 +18,6 @@ public class HomePage {
         s += "<li>" + "login(POST): /tokens" + "</li>";
         s += "</ul>";*/
         s += "<br/>";
-        //測驗相關API
         s += "<h2> 會展相關API:</h2>";
         s += "<ul>";/*
         s += "<li>" + "新增一筆新會展(POST): /exhibitions" + "</li>";
@@ -35,17 +34,9 @@ public class HomePage {
         s += "</ul>";
         s += "<br/>";
         //User相關API
-        s += "<h2> User相關API:</h2>";/*
-        s += "<ul>";
-        s += "<li>" + "註冊一名使用者資訊(POST): /users" + "</li>";
-        s += "<li>" + "<B>(尚未實作)</B>更新使用者資訊(PUT): /users/{uid}" + "</li>";*/
-        s += "</ul>";
+        s += "<h2> 主題活動相關API:</h2>";
+        s += "<li>" + "取得某user之集點簿(GET): /exhibitions/activity/{:userid}/{:country}/collectionbox" + "</li>";
         //User相關API
-        s += "<h2> 廣告相關API:</h2>";/*
-        s += "<ul>";
-        s += "<li>" + "新增一新廣告(POST): /advertisements" + "</li>";
-        s += "<li>" + "查詢廣告列表(GET): /advertisements" + "</li>";*/
-        s += "</ul>";
         s += "</body></html>";
         return s;
     }
