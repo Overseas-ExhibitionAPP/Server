@@ -33,12 +33,20 @@ public class HomePage {
         s += "<li>" + "取得某該舉辦地區之展覽資訊與各展點交通資訊(GET): /exhibitions/{:year}/traffic/{:country}" + "</li>";
         s += "</ul>";
         s += "<br/>";
-        //User相關API
         s += "<h2> 主題活動相關API:</h2>";
+        s += "<ul>";
         s += "<li>" + "取得某user之集點簿(GET): /exhibitions/activity/{:userid}/{:country}/collectionbox" + "</li>";
         s += "<li>" + "某user進行集章(PUT): /exhibitions/activity/collectionbox" + "</li>";
         s += "<li>" + "某user進行兌換(GET): /exhibitions/activity/{:userid}/{:country}/collectionbox/exchange" + "</li>";
-        //User相關API
+        s += "</ul>";
+        s += "<h2> 講座時間相關API:</h2>";
+        s += "<ul>";
+        s += "<li>" + "取得某舉辦國家之所有講座時間(GET): /exhibitions/lectures/{:country}" + "</li>";
+        s += "</ul>";
+        s += "<h2> 最新消息相關API:</h2>";
+        s += "<ul>";
+        s += "<li>" + "取得某舉辦國家之所有最新消息(GET): /news/{:country}" + "</li>";
+        s += "</ul>";
         s += "</body></html>";
         return s;
     }
