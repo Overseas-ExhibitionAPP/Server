@@ -89,7 +89,9 @@ public class ActivityFunc {
             DBCollection scol = m.db.getCollection("School-Logo");
             BasicDBObject search = new BasicDBObject();
             search.put("_id", jinput.getString("schoolnum"));
-            String schoolpic = scol.find(search).next().get("picture").toString();
+            JSONObject tmp = new JSONObject(scol.find(search).next().toString());
+            String schoolpic = tmp.get("picture").toString();
+            String schoolnum = tmp.get("_id").toString();
             DBCollection col = m.db.getCollection("CollectionBox");
             //取得Server side目前時間之年分
             Calendar calendar = Calendar.getInstance();
@@ -101,6 +103,7 @@ public class ActivityFunc {
             updateQuery.put("year", year);
             //設定欲新增之集章記錄，內含圖片之base64編碼與集章時戳
             BasicDBObject item = new BasicDBObject();
+            item.put("schoolnum", schoolnum);
             item.put("picture", schoolpic);
             item.put("timestamp", vTime);
             //若資料庫中未有這筆資料，則新增之，若有則更新集章簿記錄
@@ -110,24 +113,31 @@ public class ActivityFunc {
                 ArrayList<BasicDBObject> cbox = new ArrayList<BasicDBObject>();
                 cbox.add(item);
                 updateQuery.put("collectionbox", cbox);
-                updateQuery.put("box-status", 0);
+                updateQuery.put("box_status", 0);
                 col.insert(updateQuery);
                 output.put("status", "201");
                 output.put("message", "新增集章簿與集章紀錄成功");
             } else {
                 //檢查是否處於已兌換狀態(boxS為1)，若為兌換狀態，則不新增任何集章紀錄
-                int boxS = Integer.parseInt(searchR.next().get("box-status").toString());
+                JSONObject tmpCbox = new JSONObject(searchR.next().toString());
+                int boxS = Integer.parseInt(tmpCbox.get("box_status").toString());
+                int boxCount = tmpCbox.getJSONArray("collectionbox").length();
                 if(boxS == 1) {
                     output.put("status", "403");
                     output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
                 } else {
-                    BasicDBObject itemSet = new BasicDBObject();
-                    itemSet.put("collectionbox", item);
-                    BasicDBObject updateCommand = new BasicDBObject();
-                    updateCommand.put("$push", itemSet);
-                    col.update(updateQuery,updateCommand);
-                    output.put("status", "200");
-                    output.put("message", "新增集章紀錄成功");
+                    if(boxCount == 30) {
+                        output.put("status", "403");
+                        output.put("message", "集章簿已滿，不再進行集章紀錄");
+                    } else {
+                        BasicDBObject itemSet = new BasicDBObject();
+                        itemSet.put("collectionbox", item);
+                        BasicDBObject updateCommand = new BasicDBObject();
+                        updateCommand.put("$push", itemSet);
+                        col.update(updateQuery,updateCommand);
+                        output.put("status", "200");
+                        output.put("message", "新增集章紀錄成功");
+                    }
                 }
             }
         } catch(JSONException err) {
@@ -173,16 +183,16 @@ public class ActivityFunc {
             } else {
                 JSONObject tmp = new JSONObject(searchR.next().toString());
                 //檢查是否處於已兌換狀態(boxS為1)/未兌換狀態(box為0)
-                int boxS = tmp.getInt("box-status");
+                int boxS = tmp.getInt("box_status");
                 if(boxS == 1) {
                     output.put("status", "403-1");
-                    output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
+                    output.put("message", "集章簿已兌換贈品，不可重複兌換");
                 } else {
                     JSONArray tmpArr = tmp.getJSONArray("collectionbox");
                     //檢查集章簿是否已集滿
                     if(tmpArr.length() == 30) {
                         BasicDBObject itemSet = new BasicDBObject();
-                        itemSet.put("box-status", 1);
+                        itemSet.put("box_status", 1);
                         BasicDBObject updateCommand = new BasicDBObject();
                         updateCommand.put("$set", itemSet);
                         col.update(search,updateCommand);

@@ -39,7 +39,7 @@ public class NewsFunc {
             DBCursor searchR = col.find(search).sort(sort);
             if(searchR.count() == 0) {
                 output.put("status", "403");
-                output.put("message", "尚未有任何講座時間");
+                output.put("message", "尚未有任何最新消息");
             } else {
                 JSONArray tmpArr = new JSONArray();
                 JSONObject tmp = new JSONObject();
