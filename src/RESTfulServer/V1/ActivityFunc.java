@@ -82,61 +82,77 @@ public class ActivityFunc {
         JSONObject output = new JSONObject();
         try{
             JSONObject jinput = new JSONObject(input);
-            //取得集章時間
-            SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            String vTime = sdFormat.format(new Date());
-            //取得符合學校代碼的logo(base64編碼)
-            DBCollection scol = m.db.getCollection("School-Logo");
-            BasicDBObject search = new BasicDBObject();
-            search.put("_id", jinput.getString("schoolnum"));
-            JSONObject tmp = new JSONObject(scol.find(search).next().toString());
-            String schoolpic = tmp.get("picture").toString();
-            String schoolnum = tmp.get("_id").toString();
+            //檢查是否為重複集章
             DBCollection col = m.db.getCollection("CollectionBox");
-            //取得Server side目前時間之年分
-            Calendar calendar = Calendar.getInstance();
-            int year = calendar.get(Calendar.YEAR);
-            //設定搜尋條件,找符合的集章簿
-            BasicDBObject updateQuery = new BasicDBObject();
-            updateQuery.put("uid", jinput.getString("userid"));
-            updateQuery.put("country", jinput.getString("country"));
-            updateQuery.put("year", year);
-            //設定欲新增之集章記錄，內含圖片之base64編碼與集章時戳
-            BasicDBObject item = new BasicDBObject();
-            item.put("schoolnum", schoolnum);
-            item.put("picture", schoolpic);
-            item.put("timestamp", vTime);
-            //若資料庫中未有這筆資料，則新增之，若有則更新集章簿記錄
-            DBCursor searchR = col.find(updateQuery);
-            int count = searchR.count();
-            if(count == 0) {
-                ArrayList<BasicDBObject> cbox = new ArrayList<BasicDBObject>();
-                cbox.add(item);
-                updateQuery.put("collectionbox", cbox);
-                updateQuery.put("box_status", 0);
-                col.insert(updateQuery);
-                output.put("status", "201");
-                output.put("message", "新增集章簿與集章紀錄成功");
+            BasicDBObject citem = new BasicDBObject();
+            citem.put("schoolnum", jinput.getString("schoolnum"));
+            BasicDBObject searchCommand = new BasicDBObject();
+            searchCommand.put("$elemMatch", citem);
+            BasicDBObject searchArr = new BasicDBObject();
+            searchArr.put("collectionbox", searchCommand);
+            BasicDBObject searchQuery = new BasicDBObject();
+            searchQuery.put("uid", jinput.getString("userid"));
+            searchQuery.put("country", jinput.getString("country"));
+            int check = col.find(searchQuery,searchArr).count();
+            if(check != 0) {
+                output.put("status", "403");
+                output.put("message", "重複集章");
             } else {
-                //檢查是否處於已兌換狀態(boxS為1)，若為兌換狀態，則不新增任何集章紀錄
-                JSONObject tmpCbox = new JSONObject(searchR.next().toString());
-                int boxS = Integer.parseInt(tmpCbox.get("box_status").toString());
-                int boxCount = tmpCbox.getJSONArray("collectionbox").length();
-                if(boxS == 1) {
-                    output.put("status", "403");
-                    output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
+                //取得集章時間
+                SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                String vTime = sdFormat.format(new Date());
+                //取得符合學校代碼的logo(base64編碼)
+                DBCollection scol = m.db.getCollection("School-Logo");
+                BasicDBObject search = new BasicDBObject();
+                search.put("_id", jinput.getString("schoolnum"));
+                JSONObject tmp = new JSONObject(scol.find(search).next().toString());
+                String schoolpic = tmp.get("picture").toString();
+                String schoolnum = tmp.get("_id").toString();
+                //取得Server side目前時間之年分
+                Calendar calendar = Calendar.getInstance();
+                int year = calendar.get(Calendar.YEAR);
+                //設定搜尋條件,找符合的集章簿
+                BasicDBObject updateQuery = new BasicDBObject();
+                updateQuery.put("uid", jinput.getString("userid"));
+                updateQuery.put("country", jinput.getString("country"));
+                updateQuery.put("year", year);
+                //設定欲新增之集章記錄，內含圖片之base64編碼與集章時戳
+                BasicDBObject item = new BasicDBObject();
+                item.put("schoolnum", schoolnum);
+                item.put("picture", schoolpic);
+                item.put("timestamp", vTime);
+                //若資料庫中未有這筆資料，則新增之，若有則更新集章簿記錄
+                DBCursor searchR = col.find(updateQuery);
+                int count = searchR.count();
+                if(count == 0) {
+                    ArrayList<BasicDBObject> cbox = new ArrayList<BasicDBObject>();
+                    cbox.add(item);
+                    updateQuery.put("collectionbox", cbox);
+                    updateQuery.put("box_status", 0);
+                    col.insert(updateQuery);
+                    output.put("status", "201");
+                    output.put("message", "新增集章簿與集章紀錄成功");
                 } else {
-                    if(boxCount == 30) {
+                    //檢查是否處於已兌換狀態(boxS為1)，若為兌換狀態，則不新增任何集章紀錄
+                    JSONObject tmpCbox = new JSONObject(searchR.next().toString());
+                    int boxS = Integer.parseInt(tmpCbox.get("box_status").toString());
+                    int boxCount = tmpCbox.getJSONArray("collectionbox").length();
+                    if(boxS == 1) {
                         output.put("status", "403");
-                        output.put("message", "集章簿已滿，不再進行集章紀錄");
+                        output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
                     } else {
-                        BasicDBObject itemSet = new BasicDBObject();
-                        itemSet.put("collectionbox", item);
-                        BasicDBObject updateCommand = new BasicDBObject();
-                        updateCommand.put("$push", itemSet);
-                        col.update(updateQuery,updateCommand);
-                        output.put("status", "200");
-                        output.put("message", "新增集章紀錄成功");
+                        if(boxCount == 30) {
+                            output.put("status", "403");
+                            output.put("message", "集章簿已滿，不再進行集章紀錄");
+                        } else {
+                            BasicDBObject itemSet = new BasicDBObject();
+                            itemSet.put("collectionbox", item);
+                            BasicDBObject updateCommand = new BasicDBObject();
+                            updateCommand.put("$push", itemSet);
+                            col.update(updateQuery,updateCommand);
+                            output.put("status", "200");
+                            output.put("message", "新增集章紀錄成功");
+                        }
                     }
                 }
             }
@@ -190,7 +206,7 @@ public class ActivityFunc {
                 } else {
                     JSONArray tmpArr = tmp.getJSONArray("collectionbox");
                     //檢查集章簿是否已集滿
-                    if(tmpArr.length() == 30) {
+                    if(tmpArr.length() == 15) {
                         BasicDBObject itemSet = new BasicDBObject();
                         itemSet.put("box_status", 1);
                         BasicDBObject updateCommand = new BasicDBObject();
