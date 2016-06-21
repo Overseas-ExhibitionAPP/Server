@@ -49,7 +49,8 @@ public class HomePage {
         s += "</ul>";
         s += "<h2> 參展學校相關API:</h2>";
         s += "<ul>";
-        s += "<li>" + "依照地區與學群條件搜尋，取出符合條件之學校清單(PUT): /school/search" + "</li>";
+        s += "<li>" + "依照地區與學群條件搜尋，取得符合條件之學校清單(PUT): /school/search" + "</li>";
+        s += "<li>" + "取得符合學校代碼之學校資訊(GET): /school/{:schoolid}" + "</li>";
         s += "</ul>";
         s += "</body></html>";
         return s;
