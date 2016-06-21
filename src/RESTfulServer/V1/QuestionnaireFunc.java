@@ -16,7 +16,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
 
-import MongoConnection.MongoJDBC;
+import DBConnection.MongoJDBC;
 @Path("/V1/questionnaire")
 public class QuestionnaireFunc {
     MongoJDBC m;
@@ -43,7 +43,7 @@ public class QuestionnaireFunc {
             output.remove("eid");
             output.remove("openingtime");
             output.remove("closingtime");
-            output.put("status", 200);
+            output.put("status", "200");
         } catch(JSONException err) {
         	output = new JSONObject();
         	output.put("status", "400");
@@ -85,7 +85,7 @@ public class QuestionnaireFunc {
             SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
             insertSet.put("createtime", sdFormat.format(new Date()));
             col.insert(insertSet);
-            output.put("status", 200);
+            output.put("status", "200");
             output.put("message", "已成功送出");
 
         } catch(JSONException err) {

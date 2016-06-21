@@ -47,6 +47,10 @@ public class HomePage {
         s += "<ul>";
         s += "<li>" + "取得某舉辦國家之所有最新消息(GET): /news/{:country}" + "</li>";
         s += "</ul>";
+        s += "<h2> 參展學校相關API:</h2>";
+        s += "<ul>";
+        s += "<li>" + "依照地區與學群條件搜尋，取出符合條件之學校清單(PUT): /school/search" + "</li>";
+        s += "</ul>";
         s += "</body></html>";
         return s;
     }

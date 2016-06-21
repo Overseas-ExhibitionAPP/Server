@@ -15,7 +15,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
 
-import MongoConnection.MongoJDBC;
+import DBConnection.MongoJDBC;
 @Path("/V1/exhibitions")
 public class TrafficInfoFunc {
     MongoJDBC m;
@@ -44,7 +44,7 @@ public class TrafficInfoFunc {
                 tmp.remove("layout");
                 outputArr.put(tmp);
             }
-            output.put("status", 200);
+            output.put("status", "200");
             output.put("traffic_list", outputArr);
         } catch(JSONException err) {
         	output = new JSONObject();

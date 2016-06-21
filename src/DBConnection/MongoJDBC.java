@@ -9,7 +9,7 @@
  *  3.drop collection method
  *  4.print all document from one collection(find All method)
  */
-package MongoConnection;
+package DBConnection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;

@@ -14,7 +14,7 @@ import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
 
-import MongoConnection.MongoJDBC;
+import DBConnection.MongoJDBC;
 @Path("/V1/exhibitions")
 public class LayoutFunc {
     MongoJDBC m;
@@ -46,7 +46,7 @@ public class LayoutFunc {
                 tmp.remove("endtime");
                 outputArr.put(tmp);
             }
-            output.put("status", 200);
+            output.put("status", "200");
             output.put("layout_list", outputArr);
         } catch(NoSuchElementException err) {
             output = new JSONObject();

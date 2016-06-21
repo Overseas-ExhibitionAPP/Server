@@ -16,7 +16,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
-import MongoConnection.MongoJDBC;
+
+import DBConnection.MongoJDBC;
 @Path("/V1/news")
 public class NewsFunc {
     MongoJDBC m;
@@ -26,7 +27,7 @@ public class NewsFunc {
     @GET
     @Path("/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getUserCBox(@PathParam("country") String country){
+    public Response getUserCBox(@PathParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{

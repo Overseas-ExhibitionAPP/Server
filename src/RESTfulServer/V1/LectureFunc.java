@@ -14,7 +14,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
-import MongoConnection.MongoJDBC;
+
+import DBConnection.MongoJDBC;
 @Path("/V1/exhibitions/lectures")
 public class LectureFunc {
     MongoJDBC m;
@@ -24,7 +25,7 @@ public class LectureFunc {
     @GET
     @Path("/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getLectureSet(@PathParam("country") String country){
+    public Response getLectureSet(@PathParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{

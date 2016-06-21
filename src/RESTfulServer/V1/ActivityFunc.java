@@ -19,7 +19,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
-import MongoConnection.MongoJDBC;
+
+import DBConnection.MongoJDBC;
 
 @Path("/V1/exhibitions/activity")
 public class ActivityFunc {
@@ -30,7 +31,7 @@ public class ActivityFunc {
     @GET
     @Path("/{userid}/{country}/collectionbox")
     @Produces("application/json; charset=UTF-8")
-    public Response getUserCBox(@PathParam("userid") String uid, @PathParam("country") String country){
+    public Response getUserCBox(@PathParam("userid") String uid, @PathParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -77,23 +78,21 @@ public class ActivityFunc {
     @Path("/collectionbox")
     @Consumes("application/json; charset=UTF-8")
     @Produces("application/json; charset=UTF-8")
-    public Response updateUserCBox(String input){
+    public Response updateUserCBox(String input) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
             JSONObject jinput = new JSONObject(input);
             //檢查是否為重複集章
             DBCollection col = m.db.getCollection("CollectionBox");
+            
             BasicDBObject citem = new BasicDBObject();
-            citem.put("schoolnum", jinput.getString("schoolnum"));
+            citem.put("uid", jinput.getString("userid"));
+            citem.put("country", jinput.getString("country"));
+            citem.put("collectionbox.schoolnum", jinput.getString("schoolnum"));
             BasicDBObject searchCommand = new BasicDBObject();
-            searchCommand.put("$elemMatch", citem);
-            BasicDBObject searchArr = new BasicDBObject();
-            searchArr.put("collectionbox", searchCommand);
-            BasicDBObject searchQuery = new BasicDBObject();
-            searchQuery.put("uid", jinput.getString("userid"));
-            searchQuery.put("country", jinput.getString("country"));
-            int check = col.find(searchQuery,searchArr).count();
+            searchCommand.put("collectionbox.$", 1);
+            int check = col.find(citem,searchCommand).count();
             if(check != 0) {
                 output.put("status", "403");
                 output.put("message", "重複集章");
@@ -177,7 +176,7 @@ public class ActivityFunc {
     @GET
     @Path("/{userid}/{country}/collectionbox/exchange")
     @Produces("application/json; charset=UTF-8")
-    public Response exchangeUserCBox(@PathParam("userid") String uid, @PathParam("country") String country){
+    public Response exchangeUserCBox(@PathParam("userid") String uid, @PathParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
