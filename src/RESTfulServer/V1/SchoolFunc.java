@@ -8,11 +8,13 @@ import java.util.Calendar;
 import java.util.Date;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
@@ -125,20 +127,21 @@ public class SchoolFunc {
     @GET
     @Path("/{sch_id}")
     @Produces("application/json; charset=UTF-8")
-    public Response getSchoolInfo(@PathParam("sch_id")String schid) throws Exception{
+    public Response getSchoolInfo(@PathParam("sch_id")String schid,@QueryParam("country")@DefaultValue("") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try {
             MssqlJDBC ms = new MssqlJDBC();
+            //取得符合條件之學校對於學系與學群對應的資料
             ms.connectionServer("forschool");
             String sql = "select depart.deptname, depart.homepage, deptgroup.type from depart, deptgroup ";
             sql += "where deptgroup.code = depart.deptgroup and ";
             sql += "depart.schoolcode = '" + schid + "'";
             sql += "order by deptgroup asc";
             ms.executeQueryCommand(sql);
-            JSONArray deptGList =new JSONArray();
-            JSONArray deptList = new JSONArray();
-            JSONObject deptObj;
+            JSONArray deptGList =new JSONArray(); //儲存所有學群與學系的分類資料
+            JSONArray deptList = new JSONArray(); //儲存單一學群與學系的資料
+            JSONObject deptObj;//匯整單一學系資料，含學系名與對應系網址
             boolean check = false;
             String deptG="", pre_deptG="";
             while(ms.rs.next()) {
@@ -160,10 +163,19 @@ public class SchoolFunc {
                  tmp.put("deptURL", ms.rs.getString(2));
                  deptList.put(tmp);
             }
+            String schoolCName = "";
+            String schoolEName = "";
+            sql = "select chineseName,englishName from school where schoolcode='" + schid+ "'";
+            ms.executeQueryCommand(sql);
+            while(ms.rs.next()) {
+                schoolCName = ms.rs.getString(1);
+                schoolEName = ms.rs.getString(2);
+            }
             ms.closeConnection();
             ms = new MssqlJDBC();
+            //取得符合條件學校之學校相關資訊
             ms.connectionServer("oversea");
-            sql = "select school.schoolcode,schoolinfo.buildingtime,schoolinfo.colid_num,"
+            sql = "select schoolinfo.buildingtime,schoolinfo.colid_num,"
                     + "schoolinfo.depart_num,schoolinfo.snum,schoolinfo.osnum,schoolinfo.tnum,"
                     + "schoolinfo.area,schoolinfo.attractions,schoolinfo.zcode,schoolinfo.address,"
                     + "schoolinfo.tel,schoolinfo.fax,schoolinfo.website,schoolinfo.introduction,"
@@ -175,44 +187,89 @@ public class SchoolFunc {
                     + "where school.id = schoolinfo.sch_id and "
                     + "school.schoolcode = '"+ schid + "'";
             ms.executeQueryCommand(sql);
-            int count = 0;
-            JSONObject schoolinfo = new JSONObject();
+            boolean infoCheck = false;
+            JSONObject schoolinfo = new JSONObject();//儲存學校資訊
             while(ms.rs.next()) {
-                schoolinfo.put("buildingtime", ms.rs.getString(2));
-                schoolinfo.put("colid_num", ms.rs.getString(3));
-                schoolinfo.put("depart_num", ms.rs.getString(4));
-                schoolinfo.put("snum", ms.rs.getString(5));
-                schoolinfo.put("osnum", ms.rs.getString(6));
-                schoolinfo.put("tnum", ms.rs.getString(7));
-                schoolinfo.put("area", ms.rs.getString(8));
-                schoolinfo.put("attractions", ms.rs.getString(9));
-                schoolinfo.put("zcode", ms.rs.getString(10));
-                schoolinfo.put("address", ms.rs.getString(11));
-                schoolinfo.put("tel", ms.rs.getString(12));
-                schoolinfo.put("fax", ms.rs.getString(13));
-                schoolinfo.put("website", ms.rs.getString(14));
-                schoolinfo.put("introduction", ms.rs.getString(15));
+                schoolinfo.put("buildingtime", ms.rs.getString(1));
+                schoolinfo.put("colid_num", ms.rs.getString(2));
+                schoolinfo.put("depart_num", ms.rs.getString(3));
+                schoolinfo.put("snum", ms.rs.getString(4));
+                schoolinfo.put("osnum", ms.rs.getString(5));
+                schoolinfo.put("tnum", ms.rs.getString(6));
+                schoolinfo.put("area", ms.rs.getString(7));
+                schoolinfo.put("attractions", ms.rs.getString(8));
+                schoolinfo.put("zcode", ms.rs.getString(9));
+                schoolinfo.put("address", ms.rs.getString(10));
+                schoolinfo.put("tel", ms.rs.getString(11));
+                schoolinfo.put("fax", ms.rs.getString(12));
+                schoolinfo.put("website", ms.rs.getString(13));
+                schoolinfo.put("introduction", ms.rs.getString(14));
                 JSONArray cList = new JSONArray();
-                cList.put(new JSONObject().append("ctitle1", ms.rs.getString(16)).append("characteristic1",ms.rs.getString(21)));
-                cList.put(new JSONObject().append("ctitle2", ms.rs.getString(17)).append("characteristic2",ms.rs.getString(22)));
-                cList.put(new JSONObject().append("ctitle3", ms.rs.getString(18)).append("characteristic3",ms.rs.getString(23)));
-                cList.put(new JSONObject().append("ctitle4", ms.rs.getString(19)).append("characteristic4",ms.rs.getString(24)));
-                cList.put(new JSONObject().append("ctitle5", ms.rs.getString(20)).append("characteristic5",ms.rs.getString(25)));
+                cList.put(new JSONObject().append("ctitle1", ms.rs.getString(15)).append("characteristic1",ms.rs.getString(20)));
+                cList.put(new JSONObject().append("ctitle2", ms.rs.getString(16)).append("characteristic2",ms.rs.getString(21)));
+                cList.put(new JSONObject().append("ctitle3", ms.rs.getString(17)).append("characteristic3",ms.rs.getString(22)));
+                cList.put(new JSONObject().append("ctitle4", ms.rs.getString(18)).append("characteristic4",ms.rs.getString(23)));
+                cList.put(new JSONObject().append("ctitle5", ms.rs.getString(19)).append("characteristic5",ms.rs.getString(24)));
                 schoolinfo.put("cList", cList);
-                schoolinfo.put("alumnus", ms.rs.getString(26));
-                schoolinfo.put("accommodation", ms.rs.getString(27));
-                schoolinfo.put("livingexpense", ms.rs.getString(28));
-                count++;
+                schoolinfo.put("alumnus", ms.rs.getString(25));
+                schoolinfo.put("accommodation", ms.rs.getString(26));
+                schoolinfo.put("livingexpense", ms.rs.getString(27));
+                infoCheck = true;
             }
-            if(count != 0) {
-                output.put("status", "200-1");
-                output.put("schoolnum", schid);
-                output.put("schoolinfo", schoolinfo);
-                output.put("deptGList", deptGList);
+            boolean layoutcheck = false;
+            JSONArray layoutList = new JSONArray();//儲存符合舉辦國家之各地區之攤位號碼
+            //取得符合學校資料之攤位資料
+            if(country.equals("") == true) {
+                output.put("status", "400");
+                output.put("message", "未提供欲查詢的國家代碼");
             } else {
-                output.put("status", "200-2");
+                
+                //取得Server side目前時間之年分
+                Calendar calendar = Calendar.getInstance();
+                int year = calendar.get(Calendar.YEAR);
+                sql = "select showcase,lid from layout,school where " 
+                        + "yy = '" + year +"' and " 
+                        + "country='" + country.toUpperCase() + "' and "
+                        + "layout.sch_id = school.id and "
+                        + "school.schoolcode = '" + schid + "' "
+                        + "order by lid asc";
+                ms.executeQueryCommand(sql);
+                while(ms.rs.next()) {
+                    JSONObject tmp = new JSONObject();
+                    tmp.put("layoutNum", ms.rs.getString(1));
+                    tmp.put("exhibNum", ms.rs.getString(2));
+                    layoutList.put(tmp);
+                    layoutcheck = true;
+                }
+                /*
+                 * 檢查是否有取得學校資訊與攤位資訊，則以狀態碼提醒
+                 * 1.皆有取得學校資訊與攤位資訊:200-1
+                 * 2.有取得學校資訊，無取得攤位資訊:200-2
+                 * 3.無取得學校資訊，有取得攤位資訊:200-3
+                 * 4.無取得學校資訊，無取得攤位資訊:200-4
+                 */
+                
+                if(infoCheck == true) {
+                    if(layoutcheck == true) {
+                        output.put("status", "200-1");
+                        output.put("layoutList", layoutList);
+                        output.put("schoolinfo", schoolinfo);
+                    } else {
+                        output.put("status", "200-2");
+                        output.put("schoolinfo", schoolinfo);
+                    }
+                } else {
+                    if(layoutcheck == true) {
+                        output.put("status", "200-3");
+                        output.put("layoutList", layoutList);
+                    } else {
+                        output.put("status", "200-4");
+                    }
+                }                    
                 output.put("schoolnum", schid);
                 output.put("deptGList", deptGList);
+                output.put("chineseName", schoolCName);
+                output.put("englishName", schoolEName);
             }
         }catch(JSONException err) {
             output = new JSONObject();
@@ -222,14 +279,12 @@ public class SchoolFunc {
             output = new JSONObject();
             output.put("status", "502");
             output.put("message",sqle.getMessage());
-            sqle.printStackTrace();
-            //output.put("message","資料庫查詢錯誤");
+            output.put("message","資料庫錯誤");
         } catch(Exception err) {
             output = new JSONObject();
             output.put("status", "500");
             output.put("message", "tst");
-            err.printStackTrace();
-            //output.put("message","伺服器錯誤");
+            output.put("message","伺服器錯誤");
         } finally {
             re.setResponse(output.toString());
             ms.closeConnection();
