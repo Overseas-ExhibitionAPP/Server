@@ -32,6 +32,7 @@ import DBConnection.MssqlJDBC;
 @Path("/V1/school")
 public class SchoolFunc {
     MssqlJDBC ms;
+    MongoJDBC m;
     //台灣五大地區所包含的縣市名稱
     String[][] school_areaList ={
             {"台北","臺北","新北","基隆","桃園","新竹","苗栗"},
@@ -42,6 +43,7 @@ public class SchoolFunc {
         };
     public SchoolFunc() throws Exception{
         ms = new MssqlJDBC();
+        m = new MongoJDBC();
     }
     @PUT
     @Path("/search")
@@ -175,45 +177,48 @@ public class SchoolFunc {
             ms = new MssqlJDBC();
             //取得符合條件學校之學校相關資訊
             ms.connectionServer("oversea");
-            sql = "select schoolinfo.buildingtime,schoolinfo.colid_num,"
-                    + "schoolinfo.depart_num,schoolinfo.snum,schoolinfo.osnum,schoolinfo.tnum,"
-                    + "schoolinfo.area,schoolinfo.attractions,schoolinfo.zcode,schoolinfo.address,"
+            sql = "select schoolinfo.attractions,schoolinfo.zcode,schoolinfo.address,"
                     + "schoolinfo.tel,schoolinfo.fax,schoolinfo.website,schoolinfo.introduction,"
                     + "schoolinfo.ctitle1,schoolinfo.ctitle2,schoolinfo.ctitle3,schoolinfo.ctitle4,"
                     + "schoolinfo.ctitle5,schoolinfo.characteristic1,schoolinfo.characteristic2,"
                     + "schoolinfo.characteristic3,schoolinfo.characteristic4,"
-                    + "schoolinfo.characteristic5,schoolinfo.alumnus,schoolinfo.accommodation,"
-                    + "schoolinfo.livingexpense from schoolinfo,school "
+                    + "schoolinfo.characteristic5,schoolinfo.alumnus from schoolinfo,school "
                     + "where school.id = schoolinfo.sch_id and "
                     + "school.schoolcode = '"+ schid + "'";
             ms.executeQueryCommand(sql);
             boolean infoCheck = false;
             JSONObject schoolinfo = new JSONObject();//儲存學校資訊
             while(ms.rs.next()) {
-                schoolinfo.put("buildingtime", ms.rs.getString(1));
-                schoolinfo.put("colid_num", ms.rs.getString(2));
-                schoolinfo.put("depart_num", ms.rs.getString(3));
-                schoolinfo.put("snum", ms.rs.getString(4));
-                schoolinfo.put("osnum", ms.rs.getString(5));
-                schoolinfo.put("tnum", ms.rs.getString(6));
-                schoolinfo.put("area", ms.rs.getString(7));
-                schoolinfo.put("attractions", ms.rs.getString(8));
-                schoolinfo.put("zcode", ms.rs.getString(9));
-                schoolinfo.put("address", ms.rs.getString(10));
-                schoolinfo.put("tel", ms.rs.getString(11));
-                schoolinfo.put("fax", ms.rs.getString(12));
-                schoolinfo.put("website", ms.rs.getString(13));
-                schoolinfo.put("introduction", ms.rs.getString(14));
+                schoolinfo.put("attractions", ms.rs.getString(1));
+                schoolinfo.put("zcode", ms.rs.getString(2));
+                schoolinfo.put("address", ms.rs.getString(3));
+                schoolinfo.put("tel", ms.rs.getString(4));
+                schoolinfo.put("fax", ms.rs.getString(5));
+                schoolinfo.put("website", ms.rs.getString(6));
+                schoolinfo.put("introduction", ms.rs.getString(7));
                 JSONArray cList = new JSONArray();
-                cList.put(new JSONObject().append("ctitle1", ms.rs.getString(15)).append("characteristic1",ms.rs.getString(20)));
-                cList.put(new JSONObject().append("ctitle2", ms.rs.getString(16)).append("characteristic2",ms.rs.getString(21)));
-                cList.put(new JSONObject().append("ctitle3", ms.rs.getString(17)).append("characteristic3",ms.rs.getString(22)));
-                cList.put(new JSONObject().append("ctitle4", ms.rs.getString(18)).append("characteristic4",ms.rs.getString(23)));
-                cList.put(new JSONObject().append("ctitle5", ms.rs.getString(19)).append("characteristic5",ms.rs.getString(24)));
+                JSONObject c1 =new JSONObject();
+                c1.put("ctitle1", ms.rs.getString(8));
+                c1.put("characteristic1",ms.rs.getString(13));
+                JSONObject c2 =new JSONObject();
+                c2.put("ctitle2", ms.rs.getString(9));
+                c2.put("characteristic2",ms.rs.getString(14));
+                JSONObject c3 =new JSONObject();
+                c3.put("ctitle3", ms.rs.getString(10));
+                c3.put("characteristic3",ms.rs.getString(15));
+                JSONObject c4 =new JSONObject();
+                c4.put("ctitle4", ms.rs.getString(11));
+                c4.put("characteristic4",ms.rs.getString(16));
+                JSONObject c5 =new JSONObject();
+                c5.put("ctitle5", ms.rs.getString(12));
+                c5.put("characteristic5",ms.rs.getString(17));
+                cList.put(c1);
+                cList.put(c2);
+                cList.put(c3);
+                cList.put(c4);
+                cList.put(c5);
                 schoolinfo.put("cList", cList);
-                schoolinfo.put("alumnus", ms.rs.getString(25));
-                schoolinfo.put("accommodation", ms.rs.getString(26));
-                schoolinfo.put("livingexpense", ms.rs.getString(27));
+                schoolinfo.put("alumnus", ms.rs.getString(18));
                 infoCheck = true;
             }
             boolean layoutcheck = false;
@@ -234,13 +239,19 @@ public class SchoolFunc {
                         + "school.schoolcode = '" + schid + "' "
                         + "order by lid asc";
                 ms.executeQueryCommand(sql);
+                DBCollection col = m.db.getCollection("Exhibition");
+                BasicDBObject search = new BasicDBObject();
+                search.put("year", year);
+                search.put("country", country);
+                JSONArray layoutSet = (new JSONObject(col.find(search).next().toString())).getJSONArray("subExhib");
                 while(ms.rs.next()) {
                     JSONObject tmp = new JSONObject();
                     tmp.put("layoutNum", ms.rs.getString(1));
-                    tmp.put("exhibNum", ms.rs.getString(2));
+                    tmp.put("exhibName", layoutSet.getJSONObject(Integer.parseInt(ms.rs.getString(2))).getString("area"));
                     layoutList.put(tmp);
                     layoutcheck = true;
                 }
+                
                 /*
                  * 檢查是否有取得學校資訊與攤位資訊，則以狀態碼提醒
                  * 1.皆有取得學校資訊與攤位資訊:200-1

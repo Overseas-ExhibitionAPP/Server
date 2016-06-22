@@ -52,6 +52,11 @@ public class HomePage {
         s += "<li>" + "依照地區與學群條件搜尋，取得符合條件之學校清單(PUT): /school/search" + "</li>";
         s += "<li>" + "取得符合學校代碼之學校資訊(GET): /school/{:schoolid}?country={:country}" + "</li>";
         s += "</ul>";
+        s += "<h2> 我的最愛相關API:</h2>";
+        s += "<ul>";
+        s += "<li>" + "取得符合條件之我的最愛清單(GET): /school/{userid}/favoritelist" + "</li>";
+        s += "<li>" + "新增/取消追蹤我的最愛(PUT): /school/favoritelist" + "</li>";
+        s += "</ul>";
         s += "</body></html>";
         return s;
     }
