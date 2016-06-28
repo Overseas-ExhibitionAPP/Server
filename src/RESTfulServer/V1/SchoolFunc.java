@@ -198,20 +198,20 @@ public class SchoolFunc {
                 schoolinfo.put("introduction", ms.rs.getString(7));
                 JSONArray cList = new JSONArray();
                 JSONObject c1 =new JSONObject();
-                c1.put("ctitle1", ms.rs.getString(8));
-                c1.put("characteristic1",ms.rs.getString(13));
+                c1.put("ctitle", ms.rs.getString(8));
+                c1.put("characteristic",ms.rs.getString(13));
                 JSONObject c2 =new JSONObject();
-                c2.put("ctitle2", ms.rs.getString(9));
-                c2.put("characteristic2",ms.rs.getString(14));
+                c2.put("ctitle", ms.rs.getString(9));
+                c2.put("characteristic",ms.rs.getString(14));
                 JSONObject c3 =new JSONObject();
-                c3.put("ctitle3", ms.rs.getString(10));
-                c3.put("characteristic3",ms.rs.getString(15));
+                c3.put("ctitle", ms.rs.getString(10));
+                c3.put("characteristic",ms.rs.getString(15));
                 JSONObject c4 =new JSONObject();
-                c4.put("ctitle4", ms.rs.getString(11));
-                c4.put("characteristic4",ms.rs.getString(16));
+                c4.put("ctitle", ms.rs.getString(11));
+                c4.put("characteristic",ms.rs.getString(16));
                 JSONObject c5 =new JSONObject();
-                c5.put("ctitle5", ms.rs.getString(12));
-                c5.put("characteristic5",ms.rs.getString(17));
+                c5.put("ctitle", ms.rs.getString(12));
+                c5.put("characteristic",ms.rs.getString(17));
                 cList.put(c1);
                 cList.put(c2);
                 cList.put(c3);
@@ -221,6 +221,10 @@ public class SchoolFunc {
                 schoolinfo.put("alumnus", ms.rs.getString(18));
                 infoCheck = true;
             }
+            DBCollection col = m.db.getCollection("School-Logo");
+            BasicDBObject search = new BasicDBObject();
+            search.put("_id", schid);
+            String pic = col.find(search).next().get("picture").toString();
             boolean layoutcheck = false;
             JSONArray layoutList = new JSONArray();//儲存符合舉辦國家之各地區之攤位號碼
             //取得符合學校資料之攤位資料
@@ -239,8 +243,8 @@ public class SchoolFunc {
                         + "school.schoolcode = '" + schid + "' "
                         + "order by lid asc";
                 ms.executeQueryCommand(sql);
-                DBCollection col = m.db.getCollection("Exhibition");
-                BasicDBObject search = new BasicDBObject();
+                col = m.db.getCollection("Exhibition");
+                search = new BasicDBObject();
                 search.put("year", year);
                 search.put("country", country);
                 JSONArray layoutSet = (new JSONObject(col.find(search).next().toString())).getJSONArray("subExhib");
@@ -251,6 +255,7 @@ public class SchoolFunc {
                     layoutList.put(tmp);
                     layoutcheck = true;
                 }
+                m.mClient.close();
                 
                 /*
                  * 檢查是否有取得學校資訊與攤位資訊，則以狀態碼提醒
@@ -276,7 +281,8 @@ public class SchoolFunc {
                     } else {
                         output.put("status", "200-4");
                     }
-                }                    
+                }
+                output.put("picture", pic);
                 output.put("schoolnum", schid);
                 output.put("deptGList", deptGList);
                 output.put("chineseName", schoolCName);

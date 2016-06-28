@@ -27,7 +27,7 @@ public class HomePage {
         s += "<li>" + "User走訪廠商(POST): /exhibitions/visit" + "</li>";
         s += "<li>" + "查詢符合廠商id之所有使用者走訪記錄(GET): /exhibitions/{eid}/visitrecord/{manfid}" + "</li>";
         s += "<li>" + "列出使用者參加的會展列表(GET): /exhibitions/{username}/joinlist" + "</li>";*/
-        s += "<li>" + "取得某該舉辦地區之各展點攤位圖(GET): /exhibitions/{:year}/layout/{:country}" + "</li>";
+        s += "<li>" + "取得某該舉辦地區之各展點攤位圖(GET): /exhibitions/layout/{:country}" + "</li>";
         s += "<li>" + "取得某該舉辦地區家之行動問卷(GET): /questionnaire/{:year}/{:country}" + "</li>";
         s += "<li>" + "回傳某User之行動問卷填答結果(POST): /questionnaire/{:year}/{:country}" + "</li>";
         s += "<li>" + "取得某該舉辦地區之展覽資訊與各展點交通資訊(GET): /exhibitions/{:year}/traffic/{:country}" + "</li>";

@@ -1,4 +1,5 @@
 package RESTfulServer.V1;
+import java.util.Calendar;
 import java.util.NoSuchElementException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -23,12 +24,15 @@ public class LayoutFunc {
     }
     //取得該舉辦地區之各展點攤位圖
     @GET
-    @Path("/{year}/layout/{country}")
+    @Path("/layout/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getLayout(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
+    public Response getLayout(@PathParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
+            //取得Server side目前時間之年分
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
             DBCollection col = m.db.getCollection("Exhibition");
             BasicDBObject search = new BasicDBObject();
             search.put("country", country);

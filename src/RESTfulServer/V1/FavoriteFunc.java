@@ -17,17 +17,21 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
 
 import DBConnection.MongoJDBC;
+import DBConnection.MssqlJDBC;
 @Path("/V1/school")
 public class FavoriteFunc {
     MongoJDBC m;
+    MssqlJDBC ms;
     public FavoriteFunc() throws Exception {
         m = new MongoJDBC();
+        ms = new MssqlJDBC();
     }
     @GET
     @Path("/{userid}/favoritelist")
@@ -36,12 +40,12 @@ public class FavoriteFunc {
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
-            //查詢符合使用者id與年分的集章簿資料
+            //查詢符合使用者id的我的最愛列表
             DBCollection col = m.db.getCollection("UserFavoriteList");
             BasicDBObject search = new BasicDBObject();
             search.put("uid", uid);
             DBCursor searchR = col.find(search);
-            //檢查是否有符合條件之集章簿資料
+            //檢查是否有符合條件之我的最愛列表
             if(searchR.count() == 0) {
                 output.put("status", "403");
                 output.put("message", "尚未有任何我的最愛紀錄");
@@ -93,13 +97,41 @@ public class FavoriteFunc {
                 output.put("status", "403");
                 output.put("message", "已取消追蹤");
             } else {
+                
+                BasicDBList layoutList = new BasicDBList();
+                //取得Server side目前時間之年分
+                Calendar calendar = Calendar.getInstance();
+                int year = calendar.get(Calendar.YEAR);
+                String country = jinput.getString("country");
+              //搜尋對應學校的各展攤位號碼
+                ms.connectionServer("oversea");
+                String sql = "select showcase,lid from layout,school where " 
+                        + "yy = '" + year +"' and " 
+                        + "country='" + country.toUpperCase() + "' and "
+                        + "layout.sch_id = school.id and "
+                        + "school.schoolcode = '" + jinput.getString("schoolnum") + "' "
+                        + "order by lid asc";
+                ms.executeQueryCommand(sql);
+                DBCollection lcol = m.db.getCollection("Exhibition");
+                BasicDBObject search = new BasicDBObject();
+                search.put("year", year);
+                search.put("country", country);
+                BasicDBList layoutSet = (BasicDBList) lcol.find(search).next().get("subExhib");
+                while(ms.rs.next()) {
+                    BasicDBObject tmp = new BasicDBObject();
+                    tmp.put("layoutNum", ms.rs.getString(1));
+                    BasicDBObject layoutItem = (BasicDBObject) layoutSet.get(Integer.parseInt(ms.rs.getString(2)));
+                    tmp.put("exhibName", layoutItem.getString("area"));
+                    layoutList.add(tmp);
+                }
                 //設定搜尋條件,找符合的我的最愛列表
                 BasicDBObject updateQuery = new BasicDBObject();
                 updateQuery.put("uid", jinput.getString("userid"));
-                //設定欲新增之學校記錄，內含學校代碼與學校名稱
+                //設定欲新增之學校記錄，內含學校代碼、學校名稱、攤位號碼
                 BasicDBObject item = new BasicDBObject();
                 item.put("schoolnum", jinput.getString("schoolnum"));
                 item.put("schName", jinput.getString("schoolname"));
+                item.put("layoutList", layoutList);
                 //若資料庫中未有這筆資料，則新增之，若有則更新我的最愛記錄
                 DBCursor searchR = col.find(updateQuery);
                 int count = searchR.count();
@@ -132,9 +164,11 @@ public class FavoriteFunc {
             output = new JSONObject();
             output.put("status", "500");
             output.put("message","伺服器錯誤");
+            err.getStackTrace();
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
+            ms.closeConnection();
         }
         return re.builder.build();
     }
