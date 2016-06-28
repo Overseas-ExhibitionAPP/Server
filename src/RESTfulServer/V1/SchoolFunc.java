@@ -46,6 +46,48 @@ public class SchoolFunc {
         m = new MongoJDBC();
     }
     @PUT
+    @Path("/schname/search")
+    @Consumes("application/json; charset=UTF-8")
+    @Produces("application/json; charset=UTF-8")
+    public Response searchSchoolname(String input) throws Exception{
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try {
+            JSONObject jinput = new JSONObject(input);
+            String schName = jinput.getString("schname");
+            ms.connectionServer("forschool");
+            String sql = "select school.schoolcode,school.chineseName from school where ";
+            sql += "school.chineseName like '%" + schName + "%' ";
+            sql += "order by school.schoolcode asc";
+            ms.executeQueryCommand(sql);
+            JSONArray tmpArr = new JSONArray();
+            while(ms.rs.next()) {
+                JSONObject tmp = new JSONObject();
+                tmp.put("schoolnum", ms.rs.getString(1));
+                tmp.put("schoolname", ms.rs.getString(2));
+                tmpArr.put(tmp);
+            }
+            output.put("status", "200");
+            output.put("searchList", tmpArr);
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式或資料錯誤");
+        }catch(SQLException sqle) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","資料庫查詢錯誤");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            ms.closeConnection();
+        }
+        return re.builder.build();
+    }
+    @PUT
     @Path("/search")
     @Consumes("application/json; charset=UTF-8")
     @Produces("application/json; charset=UTF-8")
