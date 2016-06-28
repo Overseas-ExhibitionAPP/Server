@@ -1,5 +1,6 @@
 package RESTfulServer.V1;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import javax.ws.rs.Consumes;
@@ -25,13 +26,16 @@ public class QuestionnaireFunc {
     }
     //取得該舉辦地區專屬的行動問卷
     @GET
-    @Path("/{year}/{country}")
+    @Path("/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getQuestionnaire(@PathParam("country") String country, @PathParam("year") int year) throws Exception{
+    public Response getQuestionnaire(@PathParam("country") String country) throws Exception{
         //尚未過濾未到系統開放時間不開放填答
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
+            //取得Server side目前時間之年分
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
             DBCollection col = m.db.getCollection("Questionnaire");
             BasicDBObject search = new BasicDBObject();
             search.put("country", country);
@@ -67,14 +71,16 @@ public class QuestionnaireFunc {
         return re.builder.build();
     }
     @POST
-    @Path("/{year}/{country}")
+    @Path("/{country}")
     @Consumes("application/json; charset=UTF-8")
     @Produces("application/json; charset=UTF-8")
-    public Response insertUserQuestionnaire(@PathParam("country") String country, 
-    		@PathParam("year") int year, String input) throws Exception{
+    public Response insertUserQuestionnaire(@PathParam("country") String country, String input) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
+            //取得Server side目前時間之年分
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
             JSONObject jinput = new JSONObject(input);
             DBCollection col = m.db.getCollection("UserQuestionnaire");
             BasicDBObject insertSet = new BasicDBObject();
