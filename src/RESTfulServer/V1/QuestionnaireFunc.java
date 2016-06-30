@@ -9,6 +9,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,7 +29,7 @@ public class QuestionnaireFunc {
     @GET
     @Path("/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getQuestionnaire(@PathParam("country") String country) throws Exception{
+    public Response getQuestionnaire(@PathParam("country") String country,@QueryParam("userid") String uid) throws Exception{
         //尚未過濾未到系統開放時間不開放填答
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
@@ -36,22 +37,32 @@ public class QuestionnaireFunc {
             //取得Server side目前時間之年分
             Calendar calendar = Calendar.getInstance();
             int year = calendar.get(Calendar.YEAR);
-            DBCollection col = m.db.getCollection("Questionnaire");
+            //檢查是否有填答過的紀錄
+            DBCollection col = m.db.getCollection("UserQuestionnaire");
             BasicDBObject search = new BasicDBObject();
             search.put("country", country);
             search.put("year", year);
-            DBCursor searchR = col.find(search);
-            output = new JSONObject(searchR.next().toString());
-            //移除不需要資訊
-            output.remove("_id");
-            output.remove("eid");
-            output.remove("openingtime");
-            output.remove("closingtime");
-            output.put("status", "200");
+            search.put("uid", uid);
+            int count = col.find(search).count();
+            if(count > 0) {
+                output.put("status", "403");
+                output.put("message", "已有問卷答題紀錄");
+            } else {
+                col = m.db.getCollection("Questionnaire");
+                search.remove("uid");
+                DBCursor searchR = col.find(search);
+                output = new JSONObject(searchR.next().toString());
+                //移除不需要資訊
+                output.remove("_id");
+                output.remove("eid");
+                output.remove("openingtime");
+                output.remove("closingtime");
+                output.put("status", "200");
+            }
         } catch(JSONException err) {
-        	output = new JSONObject();
-        	output.put("status", "400");
-        	output.put("message","Request格式或資料錯誤");
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式或資料錯誤");
         } catch(NoSuchElementException err) {
             output = new JSONObject();
             output.put("status", "400");

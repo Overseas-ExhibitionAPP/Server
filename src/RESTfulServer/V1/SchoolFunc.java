@@ -1,12 +1,7 @@
 package RESTfulServer.V1;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -23,9 +18,6 @@ import org.json.JSONObject;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.MongoSocketReadTimeoutException;
-
 import DBConnection.MongoJDBC;
 import DBConnection.MssqlJDBC;
 
