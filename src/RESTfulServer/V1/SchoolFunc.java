@@ -178,10 +178,10 @@ public class SchoolFunc {
             JSONArray deptGList =new JSONArray(); //儲存所有學群與學系的分類資料
             JSONArray deptList = new JSONArray(); //儲存單一學群與學系的資料
             JSONObject deptObj;//匯整單一學系資料，含學系名與對應系網址
-            boolean check = false;
+            boolean check = false;//第一筆資料檢測紀錄
             String deptG="", pre_deptG="";
             while(ms.rs.next()) {
-                 deptG = ms.rs.getString(3);
+                 deptG = ms.rs.getString(3);//取系所學群分類
                  if(check == false) {
                      pre_deptG = deptG;
                      check = true;
@@ -199,6 +199,12 @@ public class SchoolFunc {
                  tmp.put("deptURL", ms.rs.getString(2));
                  deptList.put(tmp);
             }
+            //最後一筆學群學系資料
+            deptObj = new JSONObject();
+            deptObj.put("deptGroup", pre_deptG+"學群");
+            deptObj.put("deptList",deptList);
+            deptGList.put(deptObj);
+            
             String schoolCName = "";
             String schoolEName = "";
             sql = "select chineseName,englishName from school where schoolcode='" + schid+ "'";

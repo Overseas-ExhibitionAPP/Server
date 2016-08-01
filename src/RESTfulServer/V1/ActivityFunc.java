@@ -237,4 +237,40 @@ public class ActivityFunc {
         }
         return re.builder.build();
     }
+    @GET
+    @Path("/{sid}")
+    @Produces("application/json; charset=UTF-8")
+    public Response getSchoollogo(@PathParam("sid") String sid) throws Exception{
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            DBCollection col = m.db.getCollection("School-Logo");
+            BasicDBObject search = new BasicDBObject();
+            search.put("_id", sid);
+            DBCursor searchR = col.find(search);
+            if(searchR.count() == 0) {
+                output.put("status", "403");
+                output.put("message", "找不到該學校logo資料");
+            } else {
+                output = new JSONObject(searchR.next().toString());
+                output.put("status", "200");
+            }
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+        }
+        return re.builder.build();
+    }
 }
