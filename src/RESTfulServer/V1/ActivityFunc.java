@@ -140,7 +140,7 @@ public class ActivityFunc {
                         output.put("status", "403");
                         output.put("message", "集章簿已兌換贈品，不再進行集章紀錄");
                     } else {
-                        if(boxCount == 30) {
+                        if(boxCount == 15) {
                             output.put("status", "403");
                             output.put("message", "集章簿已滿，不再進行集章紀錄");
                         } else {
