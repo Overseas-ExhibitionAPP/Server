@@ -3,10 +3,13 @@ package RESTfulServer.V1;
 import java.util.Calendar;
 import java.util.List;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 
+import org.bson.types.ObjectId;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -48,6 +51,37 @@ public class ExhibitionFunc {
         	}
         	output.put("status", "200");
         	output.put("exhibitionset", exhibSet);
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+        }
+        return re.builder.build();
+	}
+	@GET
+	@Path("/{exhibid}")
+	public Response getExhibinfo(@PathParam("exhibid") String eid) throws Exception{
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+        	//查詢符合eid的教育展資訊
+        	DBCollection col = m.db.getCollection("Exhibition");
+        	BasicDBObject search = new BasicDBObject();
+        	search.put("_id", new ObjectId(eid));
+        	DBObject result = col.find(search).next();
+        	output = new JSONObject(result.toString());
+        	output.put("status", "200");
         } catch(JSONException err) {
             output = new JSONObject();
             output.put("status", "400");
