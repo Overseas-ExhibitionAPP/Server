@@ -58,6 +58,11 @@ public class HomePage {
         s += "<li>" + "取得符合條件之我的最愛清單(GET): /school/{userid}/favoritelist" + "</li>";
         s += "<li>" + "新增/取消追蹤我的最愛(PUT): /school/favoritelist" + "</li>";
         s += "</ul>";
+        s += "<h2> AppDataCenter專用:</h2>";
+        s += "<ul>";
+        s += "<li>" + "取得教育展列表(GET): /exhibitions/list" + "</li>";
+        s += "<li>" + "取得單一教育展資訊(GET): /exhibitions/{:exhibition_id}" + "</li>";
+        s += "</ul>";
         s += "</body></html>";
         return s;
     }
