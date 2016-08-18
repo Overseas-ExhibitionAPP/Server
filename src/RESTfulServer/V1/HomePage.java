@@ -62,6 +62,8 @@ public class HomePage {
         s += "<ul>";
         s += "<li>" + "取得教育展列表(GET): /exhibitions/list" + "</li>";
         s += "<li>" + "取得單一教育展資訊(GET): /exhibitions/{:exhibition_id}" + "</li>";
+        s += "<li>" + "新增單一教育展(POST): /exhibitions" + "</li>";
+        s += "<li>" + "刪除單一教育展(DELETE): /exhibitions/{:exhibition_id}" + "</li>";
         s += "</ul>";
         s += "</body></html>";
         return s;
