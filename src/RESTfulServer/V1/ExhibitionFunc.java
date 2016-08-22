@@ -134,6 +134,7 @@ public class ExhibitionFunc {
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
+            t.mClient.close();//關閉測試資料庫連線
         }
         return re.builder.build();
     }
@@ -191,6 +192,7 @@ public class ExhibitionFunc {
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
+            t.mClient.close();//關閉測試資料庫
         }
         return re.builder.build();
     }

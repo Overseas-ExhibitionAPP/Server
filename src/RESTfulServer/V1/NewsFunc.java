@@ -27,7 +27,7 @@ public class NewsFunc {
     @GET
     @Path("/{country}")
     @Produces("application/json; charset=UTF-8")
-    public Response getUserCBox(@PathParam("country") String country) throws Exception{
+    public Response getSingleCountryNewsSet(@PathParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -52,6 +52,56 @@ public class NewsFunc {
                     tmpArr.put(tmp);
                 }
                 output.put("country", country);
+                output.put("news_set", tmpArr);
+                output.put("status", "200");
+            }
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+        }
+        return re.builder.build();
+    }
+    @GET
+    @Path("/list")
+    @Produces("application/json; charset=UTF-8")
+    public Response getUserCBox() throws Exception{
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            //查詢所有最新消息
+            DBCollection col = m.db.getCollection("NewsList");
+            BasicDBObject search = new BasicDBObject();
+            BasicDBObject limit = new BasicDBObject();
+            limit.put("date", 1);
+            limit.put("country", 1);
+            limit.put("type", 1);
+            limit.put("title", 1);
+            limit.put("content", 1);
+            BasicDBObject sort = new BasicDBObject();
+            sort.put("timestamp", -1);
+            DBCursor searchR = col.find(search,limit).sort(sort);
+            if(searchR.count() == 0) {
+                output.put("status", "403");
+                output.put("message", "尚未有任何最新消息");
+            } else {
+                JSONArray tmpArr = new JSONArray();
+                JSONObject tmp = new JSONObject();
+                while(searchR.hasNext()) {
+                    tmp = new JSONObject(searchR.next().toString());
+                    tmpArr.put(tmp);
+                }
                 output.put("news_set", tmpArr);
                 output.put("status", "200");
             }
