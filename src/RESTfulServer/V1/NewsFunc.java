@@ -1,11 +1,15 @@
 package RESTfulServer.V1;
 import javax.ws.rs.Path;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -159,6 +163,51 @@ public class NewsFunc {
             re.setResponse(output.toString());
             m.mClient.close();
             t.mClient.close();//關閉測試資料庫連線
+        }
+        return re.builder.build();
+    }
+    @POST
+    public Response insertExhibinfo(String input) throws Exception{
+        //先連接測試DB(2016.08.17)
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            DBCollection col = t.db.getCollection("NewsList");
+            JSONObject jinput = new JSONObject(input);
+            //取得Server side目前時間之年分
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            BasicDBObject insertCommand = new BasicDBObject();
+            SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd");;
+            String date = sdFormat.format(new Date());
+            insertCommand.put("year", year);
+            insertCommand.put("date", date);
+            insertCommand.put("country", jinput.getString("country"));
+            insertCommand.put("type", jinput.getString("type"));
+            insertCommand.put("title", jinput.getString("title"));
+            insertCommand.put("content", jinput.getString("content"));
+            SimpleDateFormat sdFormat2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");;
+            String timestamp = sdFormat2.format(new Date());
+            insertCommand.put("timestamp",timestamp);
+            col.insert(insertCommand);
+            output.put("status", "200");
+            output.put("message", "已成功新增");
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+            t.mClient.close();//關閉測試資料庫
         }
         return re.builder.build();
     }
