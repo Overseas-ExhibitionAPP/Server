@@ -4,11 +4,14 @@ import javax.ws.rs.Path;
 import java.util.Calendar;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+
+import org.bson.types.ObjectId;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,11 +21,14 @@ import com.mongodb.DBCursor;
 import com.mongodb.MongoSocketReadTimeoutException;
 
 import DBConnection.MongoJDBC;
+import DBConnection.TestingJDBC;
 @Path("/V1/news")
 public class NewsFunc {
+	TestingJDBC t;
     MongoJDBC m;
     public NewsFunc() throws Exception {
         m = new MongoJDBC();
+        t = new TestingJDBC();
     }
     @GET
     @Path("/{country}")
@@ -80,7 +86,7 @@ public class NewsFunc {
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
-            //查詢所有最新消息
+            //查詢所有最新消息，並封裝成陣列
             DBCollection col = m.db.getCollection("NewsList");
             BasicDBObject search = new BasicDBObject();
             BasicDBObject limit = new BasicDBObject();
@@ -120,6 +126,39 @@ public class NewsFunc {
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
+        }
+        return re.builder.build();
+    }
+    @DELETE
+    @Path("/{newsid}")
+    public Response deleteExhibinfo(@PathParam("newsid") String nid) throws Exception{
+        //先連接測試DB(2016.08.22)
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            //查詢符合nid的最新消息資訊，並刪除
+            DBCollection col = t.db.getCollection("NewsList");
+            BasicDBObject search = new BasicDBObject();
+            search.put("_id", new ObjectId(nid));
+            col.remove(search);
+            output.put("status", "200");
+            output.put("message", "已成功刪除");
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+            t.mClient.close();//關閉測試資料庫連線
         }
         return re.builder.build();
     }
