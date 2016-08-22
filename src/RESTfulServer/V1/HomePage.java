@@ -64,6 +64,12 @@ public class HomePage {
         s += "<li>" + "取得單一教育展資訊(GET): /exhibitions/{:exhibition_id}" + "</li>";
         s += "<li>" + "新增單一教育展(POST): /exhibitions" + "</li>";
         s += "<li>" + "刪除單一教育展(DELETE): /exhibitions/{:exhibition_id}" + "</li>";
+        s += "<br/>";
+        s += "<li>" + "取得最新消息列表(GET): /news/list" + "</li>";
+        s += "<li>" + "取得單一最新消息資訊(GET): /news/id/{:news_id}" + "</li>";
+        s += "<li>" + "新增單一最新消息(POST): /news" + "</li>";
+        s += "<li>" + "刪除單一最新消息(DELETE): /news/{:news_id}" + "</li>";
+        s += "<li>" + "修改單一最新消息(PUT): /news/{:news_id}" + "</li>";
         s += "</ul>";
         s += "</body></html>";
         return s;

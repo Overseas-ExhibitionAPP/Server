@@ -214,7 +214,7 @@ public class NewsFunc {
     }
     @GET
     @Path("/id/{newsid}")
-    public Response getSingleNews(@PathParam("newsid") String nid) throws Exception{
+    public Response getNews(@PathParam("newsid") String nid) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -242,6 +242,47 @@ public class NewsFunc {
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
+        }
+        return re.builder.build();
+    }
+    @PUT
+    @Path("/{newsid}")
+    public Response updateNews(@PathParam("newsid") String nid, String input) throws Exception{
+        //先連接測試DB(2016.08.17)
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+        	//查詢合nid的最新消息，並將更新的內容更新至db
+            DBCollection col = t.db.getCollection("NewsList");
+            JSONObject jinput = new JSONObject(input);
+            BasicDBObject search = new BasicDBObject();
+            search.put("_id", new ObjectId(nid));
+            BasicDBObject updateCommand = new BasicDBObject();
+            BasicDBObject updateItem = new BasicDBObject();
+            updateItem.put("country", jinput.getString("country"));
+            updateItem.put("type", jinput.getString("type"));
+            updateItem.put("title", jinput.getString("title"));
+            updateItem.put("content", jinput.getString("content"));
+            updateCommand.put("$set", updateItem);
+            col.update(search, updateCommand);
+            output.put("status", "200");
+            output.put("message", "已成功修改");
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
+            t.mClient.close();//關閉測試資料庫
         }
         return re.builder.build();
     }
