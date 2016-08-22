@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoSocketReadTimeoutException;
 
 import DBConnection.MongoJDBC;
@@ -86,7 +87,7 @@ public class NewsFunc {
     @GET
     @Path("/list")
     @Produces("application/json; charset=UTF-8")
-    public Response getUserCBox() throws Exception{
+    public Response getNewsList() throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -135,7 +136,7 @@ public class NewsFunc {
     }
     @DELETE
     @Path("/{newsid}")
-    public Response deleteExhibinfo(@PathParam("newsid") String nid) throws Exception{
+    public Response deleteNews(@PathParam("newsid") String nid) throws Exception{
         //先連接測試DB(2016.08.22)
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
@@ -167,7 +168,7 @@ public class NewsFunc {
         return re.builder.build();
     }
     @POST
-    public Response insertExhibinfo(String input) throws Exception{
+    public Response insertNews(String input) throws Exception{
         //先連接測試DB(2016.08.17)
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
@@ -208,6 +209,39 @@ public class NewsFunc {
             re.setResponse(output.toString());
             m.mClient.close();
             t.mClient.close();//關閉測試資料庫
+        }
+        return re.builder.build();
+    }
+    @GET
+    @Path("/id/{newsid}")
+    public Response getSingleNews(@PathParam("newsid") String nid) throws Exception{
+        NewResponse re = new NewResponse();
+        JSONObject output = new JSONObject();
+        try{
+            //查詢符合nid的最新消息資訊
+            DBCollection col = m.db.getCollection("NewsList");
+            BasicDBObject search = new BasicDBObject();
+            search.put("_id", new ObjectId(nid));
+            BasicDBObject limit = new BasicDBObject();
+            limit.put("timestamp", 0);
+            DBObject result = col.find(search,limit).next();
+            output = new JSONObject(result.toString());
+            output.put("status", "200");
+        } catch(JSONException err) {
+            output = new JSONObject();
+            output.put("status", "400");
+            output.put("message","Request格式/資料錯誤");
+        } catch(MongoSocketReadTimeoutException msrt) {
+            output = new JSONObject();
+            output.put("status", "502");
+            output.put("message","連線逾時");
+        } catch(Exception err) {
+            output = new JSONObject();
+            output.put("status", "500");
+            output.put("message","伺服器錯誤");
+        } finally {
+            re.setResponse(output.toString());
+            m.mClient.close();
         }
         return re.builder.build();
     }
