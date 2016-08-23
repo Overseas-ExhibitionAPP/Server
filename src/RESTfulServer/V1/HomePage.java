@@ -61,9 +61,10 @@ public class HomePage {
         s += "<h2> AppDataCenter專用:</h2>";
         s += "<ul>";
         s += "<li>" + "取得教育展列表(GET): /exhibitions/list" + "</li>";
-        s += "<li>" + "取得單一教育展資訊(GET): /exhibitions/{:exhibition_id}" + "</li>";
+        s += "<li>" + "取得單一教育展資訊(GET): /exhibitions/id/{:exhibition_id}" + "</li>";
         s += "<li>" + "新增單一教育展(POST): /exhibitions" + "</li>";
         s += "<li>" + "刪除單一教育展(DELETE): /exhibitions/{:exhibition_id}" + "</li>";
+        s += "<li>" + "修改單一教育展(PUT): /exhibitions/{:exhibition_id}" + "</li>";
         s += "<br/>";
         s += "<li>" + "取得最新消息列表(GET): /news/list" + "</li>";
         s += "<li>" + "取得單一最新消息資訊(GET): /news/id/{:news_id}" + "</li>";
