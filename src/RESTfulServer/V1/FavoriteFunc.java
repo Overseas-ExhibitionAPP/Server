@@ -11,6 +11,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONArray;
@@ -25,7 +26,7 @@ import com.mongodb.MongoSocketReadTimeoutException;
 
 import DBConnection.MongoJDBC;
 import DBConnection.MssqlJDBC;
-@Path("/V1/school")
+@Path("/V1/users")
 public class FavoriteFunc {
     MongoJDBC m;
     MssqlJDBC ms;
@@ -36,7 +37,7 @@ public class FavoriteFunc {
     @GET
     @Path("/{userid}/favoritelist")
     @Produces("application/json; charset=UTF-8")
-    public Response getUserFavoriteList(@PathParam("userid") String uid) throws Exception{
+    public Response getUserFavoriteList(@PathParam("userid") String uid, @QueryParam("country") String country) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -50,8 +51,50 @@ public class FavoriteFunc {
                 output.put("status", "403");
                 output.put("message", "尚未有任何我的最愛紀錄");
             } else {
-                output = new JSONObject(searchR.next().toString());
+                //取得目前user的我的最愛列表
+                JSONObject tmpUser = new JSONObject(searchR.next().toString());
+                //取得Server side目前時間之年分
+                Calendar calendar = Calendar.getInstance();
+                int year = calendar.get(Calendar.YEAR);
+                //取得展場地區列表
+                DBCollection lcol = m.db.getCollection("Exhibition");
+                BasicDBObject searchA = new BasicDBObject();
+                searchA.put("year", year);
+                searchA.put("country", country);
+                BasicDBList layoutSet = (BasicDBList) lcol.find(searchA).next().get("subExhib");
+                ms.connectionServer("oversea");
+                //取出目前的favoriteList
+                JSONArray fList = tmpUser.getJSONArray("favoriteList");
+                for(int i = 0; i < fList.length(); i++) {
+                    JSONObject tmpL = fList.getJSONObject(i);
+                    if(tmpL.isNull("layoutList") == false) {
+                        tmpL.remove("layoutList");
+                    }
+                    String schoolnum = tmpL.getString("schoolnum");
+                    //插入目前的我的最愛列表清單之攤位位置
+                    JSONArray layoutList = new JSONArray();
+                    //搜尋對應學校的各展攤位號碼
+                    String sql = "select showcase,lid from layout,school where " 
+                            + "yy = '" + year +"' and " 
+                            + "country='" + country.toUpperCase() + "' and "
+                            + "layout.sch_id = school.id and "
+                            + "school.schoolcode = '" + schoolnum+ "' "
+                            + "order by lid asc";
+                    ms.executeQueryCommand(sql);
+                    while(ms.rs.next()) {
+                        JSONObject tmp = new JSONObject();
+                        tmp.put("layoutNum", ms.rs.getString(1));
+                        JSONObject layoutItem = new JSONObject(layoutSet.get(Integer.parseInt(ms.rs.getString(2))).toString());
+                        tmp.put("exhibName", layoutItem.getString("area"));
+                        layoutList.put(tmp);
+                    }
+                    tmpL.put("layoutList", layoutList);
+                    fList.put(i, tmpL);
+                }
+                output = tmpUser;
                 output.remove("_id");
+                output.remove("favoriteList");
+                output.put("favoriteList", fList);
                 output.put("status", "200");
             }
         } catch(JSONException err) {
@@ -66,17 +109,19 @@ public class FavoriteFunc {
             output = new JSONObject();
             output.put("status", "500");
             output.put("message","伺服器錯誤");
+            err.printStackTrace();
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
+            ms.closeConnection();
         }
         return re.builder.build();
     }
     @PUT
-    @Path("/favoritelist")
+    @Path("/{userid}/favoritelist")
     @Consumes("application/json; charset=UTF-8")
     @Produces("application/json; charset=UTF-8")
-    public Response updateUserFavoriteList(String input) throws Exception{
+    public Response updateUserFavoriteList(@PathParam("userid") String uid, String input) throws Exception{
         NewResponse re = new NewResponse();
         JSONObject output = new JSONObject();
         try{
@@ -84,54 +129,26 @@ public class FavoriteFunc {
             //檢查是否已有此學校，若是則取消我的最愛紀錄
             DBCollection col = m.db.getCollection("UserFavoriteList");
             BasicDBObject citem = new BasicDBObject();
-            citem.put("uid", jinput.getString("userid"));
+            citem.put("uid", uid);
             citem.put("favoriteList.schoolnum", jinput.getString("schoolnum"));
             BasicDBObject searchCommand = new BasicDBObject();
             searchCommand.put("favoriteList.$", 1);
             int check = col.find(citem,searchCommand).count();
             if(check != 0) {
                 //移除我的最愛資料
-                BasicDBObject match = new BasicDBObject("uid", jinput.getString("userid"));
+                BasicDBObject match = new BasicDBObject("uid", uid);
                 BasicDBObject update = new BasicDBObject("favoriteList", new BasicDBObject("schoolnum", jinput.getString("schoolnum")));
                 col.update(match, new BasicDBObject("$pull", update));
                 output.put("status", "403");
                 output.put("message", "已取消追蹤");
             } else {
-                
-                BasicDBList layoutList = new BasicDBList();
-                //取得Server side目前時間之年分
-                Calendar calendar = Calendar.getInstance();
-                int year = calendar.get(Calendar.YEAR);
-                String country = jinput.getString("country");
-              //搜尋對應學校的各展攤位號碼
-                ms.connectionServer("oversea");
-                String sql = "select showcase,lid from layout,school where " 
-                        + "yy = '" + year +"' and " 
-                        + "country='" + country.toUpperCase() + "' and "
-                        + "layout.sch_id = school.id and "
-                        + "school.schoolcode = '" + jinput.getString("schoolnum") + "' "
-                        + "order by lid asc";
-                ms.executeQueryCommand(sql);
-                DBCollection lcol = m.db.getCollection("Exhibition");
-                BasicDBObject search = new BasicDBObject();
-                search.put("year", year);
-                search.put("country", country);
-                BasicDBList layoutSet = (BasicDBList) lcol.find(search).next().get("subExhib");
-                while(ms.rs.next()) {
-                    BasicDBObject tmp = new BasicDBObject();
-                    tmp.put("layoutNum", ms.rs.getString(1));
-                    BasicDBObject layoutItem = (BasicDBObject) layoutSet.get(Integer.parseInt(ms.rs.getString(2)));
-                    tmp.put("exhibName", layoutItem.getString("area"));
-                    layoutList.add(tmp);
-                }
                 //設定搜尋條件,找符合的我的最愛列表
                 BasicDBObject updateQuery = new BasicDBObject();
-                updateQuery.put("uid", jinput.getString("userid"));
-                //設定欲新增之學校記錄，內含學校代碼、學校名稱、攤位號碼
+                updateQuery.put("uid", uid);
+                //設定欲新增之學校記錄，內含學校代碼、學校名稱
                 BasicDBObject item = new BasicDBObject();
                 item.put("schoolnum", jinput.getString("schoolnum"));
                 item.put("schName", jinput.getString("schoolname"));
-                item.put("layoutList", layoutList);
                 //若資料庫中未有這筆資料，則新增之，若有則更新我的最愛記錄
                 DBCursor searchR = col.find(updateQuery);
                 int count = searchR.count();
@@ -164,7 +181,6 @@ public class FavoriteFunc {
             output = new JSONObject();
             output.put("status", "500");
             output.put("message","伺服器錯誤");
-            err.getStackTrace();
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
