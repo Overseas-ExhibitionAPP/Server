@@ -13,10 +13,10 @@ public class HomePage {
         s += "<h1>Exhibition RESTful Server-Version 1 API</h1>";
         s += "<h2> Base URL: http://163.22.17.174:8080/V1</h2>";
         //Token相關API
-        s += "<h2> Login相關API:</h2>";/*
+        s += "<h2> User相關API:</h2>";
         s += "<ul>";
-        s += "<li>" + "login(POST): /tokens" + "</li>";
-        s += "</ul>";*/
+        s += "<li>" + "新增/更新使用者fb資訊(PUT): /users" + "</li>";
+        s += "</ul>";
         s += "<br/>";
         s += "<h2> 會展相關API:</h2>";
         s += "<ul>";/*
@@ -55,8 +55,8 @@ public class HomePage {
         s += "</ul>";
         s += "<h2> 我的最愛相關API:</h2>";
         s += "<ul>";
-        s += "<li>" + "取得符合條件之我的最愛清單(GET): /school/{userid}/favoritelist" + "</li>";
-        s += "<li>" + "新增/取消追蹤我的最愛(PUT): /school/favoritelist" + "</li>";
+        s += "<li>" + "取得符合條件之我的最愛清單(GET): /users/{:userid}/favoritelist?country={:country}" + "</li>";
+        s += "<li>" + "新增/取消追蹤我的最愛(PUT): /users/{:userid}/favoritelist" + "</li>";
         s += "</ul>";
         s += "<h2> AppDataCenter專用:</h2>";
         s += "<ul>";
