@@ -1,7 +1,9 @@
 package RESTfulServer.V1;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.NoSuchElementException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -11,12 +13,16 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 import com.mongodb.MongoSocketReadTimeoutException;
+
 
 import DBConnection.MongoJDBC;
 @Path("/V1/questionnaire")
@@ -98,7 +104,7 @@ public class QuestionnaireFunc {
             insertSet.put("country", country);
             insertSet.put("year", year);
             insertSet.put("uid", jinput.getString("userid"));
-            insertSet.put("uans", jinput.getJSONArray("userAnsList").toString());
+            insertSet.put("uans", convertArr(jinput.getJSONArray("userAnsList")));
             SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
             insertSet.put("createtime", sdFormat.format(new Date()));
             col.insert(insertSet);
@@ -121,10 +127,27 @@ public class QuestionnaireFunc {
             output = new JSONObject();
             output.put("status", "500");
             output.put("message","伺服器錯誤");
+            err.printStackTrace();
         } finally {
             re.setResponse(output.toString());
             m.mClient.close();
         }
         return re.builder.build();
+    }
+    //JSONArray轉換為List
+    public List<BasicDBObject> convertArr(JSONArray input) {
+        List<BasicDBObject> output = new ArrayList<>();
+        for(int i = 0; i < input.length(); i++) {
+            JSONArray tmp = input.getJSONObject(i).getJSONArray("options");//單題
+            List<String> op = new ArrayList<>();
+            for(int j = 0; j < tmp.length(); j++) {
+                op.add(tmp.getString(j));
+            }
+            BasicDBObject item = new BasicDBObject();
+            item.put("opitons", op);
+            output.add(item);
+        }
+        System.out.println(output);
+        return output;
     }
 }
