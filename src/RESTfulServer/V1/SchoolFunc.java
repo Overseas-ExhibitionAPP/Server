@@ -37,6 +37,7 @@ public class SchoolFunc {
         ms = new MssqlJDBC();
         m = new MongoJDBC();
     }
+    //以關鍵字查詢相關校名之學校
     @PUT
     @Path("/schname/search")
     @Consumes("application/json; charset=UTF-8")
@@ -48,9 +49,17 @@ public class SchoolFunc {
             JSONObject jinput = new JSONObject(input);
             String schName = jinput.getString("schname");
             ms.connectionServer("forschool");
-            String sql = "select school.schoolcode,school.chineseName from school where ";
-            sql += "school.chineseName like '%" + schName + "%' ";
-            sql += "order by school.schoolcode asc";
+            String sql = "";
+          //判斷關鍵字為中文或英文
+            if(schName.getBytes().length != schName.length()) {
+                sql = "select school.schoolcode,school.chineseName from school where ";
+                sql += "school.chineseName like '%" + schName + "%' ";
+                sql += "order by school.schoolcode asc";
+            } else {
+                sql = "select school.schoolcode,school.chineseName from school where ";
+                sql += "school.englishName like '%" + schName + "%' ";
+                sql += "order by school.schoolcode asc";
+            }
             ms.executeQueryCommand(sql);
             JSONArray tmpArr = new JSONArray();
             while(ms.rs.next()) {
